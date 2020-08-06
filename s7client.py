@@ -104,40 +104,35 @@ def SetupCommunication():
 	cotp_msg.append(cotp.__dict__.get("length"))
 	cotp_msg.append(cotp.__dict__.get("pdutype"))
 	cotp_msg.append(cotp.__dict__.get("destref_high"))
-	print(cotp_msg)
 	msg = tpkt_msg + cotp_msg + s7_msg
 	return msg
 
-tpkt_msg = []
-cotp_msg = []
-tpkt = TPKT()
-cotp = COTP()
-for v in tpkt.__dict__.values():
-	tpkt_msg.append(v)
+def ConnectRequest():
+	tpkt_msg = []
+	cotp_msg = []
+	tpkt = TPKT()
+	cotp = COTP()
+	for v in tpkt.__dict__.values():
+		tpkt_msg.append(v)
 
-for v in cotp.__dict__.values():
-	cotp_msg.append(v)
+	for v in cotp.__dict__.values():
+		cotp_msg.append(v)
 
-msg = tpkt_msg + cotp_msg
+	msg = tpkt_msg + cotp_msg
+	return msg
+
+def SendAndReceive(msg, s):
+	s.send(bytes(msg))
+	data = s.recv(BUFFER_SIZE)
+	return data
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
-s.send(bytes(msg))
-print("-----------------")
-data = s.recv(BUFFER_SIZE)
-print("CR Reply:")
-tpkt_rep = TPKT(data[0], data[1], data[2], data[3])
-print("TPKT header:")
-print("TPKT version: " + str(getattr(tpkt_rep, "version")))
-print("TPKT reserved: " + str(getattr(tpkt_rep, "reserved")))
-print("TPKT length: " + str(getattr(tpkt_rep, "length_high")*256 + getattr(tpkt_rep, "length_low")))
-cotp_rep = COTP(length=data[4], tpdusize=data[13])
-print("COTP header:")
-print("COTP length: " + str(getattr(cotp_rep, "length")))
-print("COTP PDU size: " + str(tpdu_value.get(str(getattr(cotp_rep, "tpdusize")))))
-msg2 = SetupCommunication() #Set up a S7COMM communication session
-s.send(bytes(msg2))
-data = s.recv(BUFFER_SIZE)
+msg = ConnectRequest()
+SendAndReceive(msg, s)
+msg = SetupCommunication() #Set up a S7COMM communication session
+SendAndReceive(msg, s)
+
 #time.sleep(1)
 s.close()
 exit()
