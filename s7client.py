@@ -121,17 +121,35 @@ def ConnectRequest():
 	msg = tpkt_msg + cotp_msg
 	return msg
 
-def SendAndReceive(msg, s):
+def VerifyCotp(header, stage):
+	if stage == 0:
+		if (len(header)-1) == header[0]:
+			if header[1] == 208:
+				print("PLC accepted connection!")
+		else:
+			print("Malformed COTP")
+
+def Verify(data, stage):
+	tpkt_header = data[:4]
+	if tpkt_header[2]*256 + tpkt_header[3] != len(data):
+		print("Malformed packet")
+	cotp_header = data[4:]
+	VerifyCotp(cotp_header, stage)
+
+def SendAndReceive(msg, s, stage):
 	s.send(bytes(msg))
 	data = s.recv(BUFFER_SIZE)
+	Verify(data, stage)
 	return data
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
 msg = ConnectRequest()
-SendAndReceive(msg, s)
+print("Connecting to PLC...")
+SendAndReceive(msg, s, 0)
 msg = SetupCommunication() #Set up a S7COMM communication session
-SendAndReceive(msg, s)
+print("Initiate S7 communication...")
+SendAndReceive(msg, s, 1)
 
 #time.sleep(1)
 s.close()
