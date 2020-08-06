@@ -56,6 +56,58 @@ class COTP:
 		self.dsttsap_high = dsttsap_high
 		self.dsttsap_low = dsttsap_low
 
+class S7_HEADER:
+	def __init__(self, protocol_id=50, rosctr_job=1, red_id_high=0, red_id_low=0, protocol_data_unit_ref_high=0, protocol_data_unit_ref_low=0, parameter_length_high=0, parameter_length_low=8, data_length_high=0, data_length_low=0):
+		self.protocol_id = protocol_id
+		self.rosctr_job = rosctr_job
+		self.red_id_high = red_id_high
+		self.red_id_low = red_id_low
+		self.protocol_data_unit_ref_high = protocol_data_unit_ref_high
+		self.protocol_data_unit_ref_low = protocol_data_unit_ref_low
+		self.parameter_length_high = parameter_length_high
+		self.parameter_length_low = parameter_length_low
+		self.data_length_high = data_length_high
+		self.data_length_low = data_length_low
+
+class S7_PARAM:
+	def __init__(self, function=240, reserved=0, max_amq_calling_high=0, max_amq_calling_low=1, max_amq_caller_high=0, max_amq_caller_low=1, pdu_length_high=1, pdu_length_low=224):
+		self.function = function
+		self.reserved = 0
+		self.max_amq_calling_high = max_amq_calling_high
+		self.max_amq_calling_low = max_amq_calling_low
+		self.max_amq_caller_high = max_amq_caller_high
+		self.max_amq_caller_low = max_amq_caller_low
+		self.pdu_length_high = pdu_length_high
+		self.pdu_length_low = pdu_length_low
+
+def SetupCommunication():
+	tpkt_msg = []
+	cotp_msg = []
+	s7_header_msg = []
+	s7_param_msg = []
+	tpkt = TPKT(length_low=25)
+	cotp = COTP(length=2, pdutype=240, destref_high=128) #Seems like only the high bits matter now
+	s7_header = S7_HEADER(protocol_id=50, rosctr_job=1, parameter_length_high=0, parameter_length_low=8)
+	s7_param = S7_PARAM()
+
+	for v in tpkt.__dict__.values():
+		tpkt_msg.append(v)
+
+	for v in s7_header.__dict__.values():
+		s7_header_msg.append(v)
+
+	for v in s7_param.__dict__.values():
+		s7_param_msg.append(v)
+
+	s7_msg = s7_header_msg + s7_param_msg
+
+	cotp_msg.append(cotp.__dict__.get("length"))
+	cotp_msg.append(cotp.__dict__.get("pdutype"))
+	cotp_msg.append(cotp.__dict__.get("destref_high"))
+	print(cotp_msg)
+	msg = tpkt_msg + cotp_msg + s7_msg
+	return msg
+
 tpkt_msg = []
 cotp_msg = []
 tpkt = TPKT()
@@ -83,6 +135,9 @@ cotp_rep = COTP(length=data[4], tpdusize=data[13])
 print("COTP header:")
 print("COTP length: " + str(getattr(cotp_rep, "length")))
 print("COTP PDU size: " + str(tpdu_value.get(str(getattr(cotp_rep, "tpdusize")))))
+msg2 = SetupCommunication() #Set up a S7COMM communication session
+s.send(bytes(msg2))
+data = s.recv(BUFFER_SIZE)
 #time.sleep(1)
 s.close()
 exit()
