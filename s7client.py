@@ -11,6 +11,16 @@ MESSAGE = b'Hello, world!'
 if len(sys.argv) > 1:
 	TCP_IP = sys.argv[1]
 
+tpdu_value = {
+	"7": 128,
+	"8": 256,
+	"9": 512,
+	"10": 1024,
+	"11": 2048,
+	"12": 4096,
+	"13": 8192
+}
+
 class TPKT:
 	def __init__(self, version=3, reserved=0, length_high=0, length_low=22):
 		self.version = version
@@ -62,6 +72,9 @@ print("TPKT header:")
 print("TPKT version: " + str(getattr(tpkt_rep, "version")))
 print("TPKT reserved: " + str(getattr(tpkt_rep, "reserved")))
 print("TPKT length: " + str(getattr(tpkt_rep, "length_high")*256 + getattr(tpkt_rep, "length_low")))
+cotp_rep = COTP(length=data[4], tpdusize=data[13])
+print("COTP length: " + str(getattr(cotp_rep, "length")))
+print("COTP PDU size: " + str(tpdu_value.get(str(getattr(cotp_rep, "tpdusize")))))
 #time.sleep(1)
 s.close()
 exit()
