@@ -7,9 +7,16 @@ TCP_IP = '127.0.0.1'
 TCP_PORT = 102
 BUFFER_SIZE = 1024
 MESSAGE = b'Hello, world!'
+RACK = 0
+SLOT = 0
 
 if len(sys.argv) > 1:
-	TCP_IP = sys.argv[1]
+	conn = sys.argv[1].split("/")
+	TCP_IP = conn[0]
+	if len(conn) > 1 and conn[1]:
+		RACK = conn[1]
+	if len(conn) > 2 and conn[2]:
+		SLOT = conn[2]
 
 tpdu_value = {
 	"7": 128,
@@ -29,7 +36,7 @@ class TPKT:
 		self.length_low = length_low
 
 class COTP:
-	def __init__(self, length=17, pdutype=224, destref_high=0, destref_low=0, srcref_high=0, srcref_low=1, cotpclass=0, paramtpdusize=192, paramlength=1, tpdusize=10, srctsap=193, paramlength2=2, srctsap_high=1, srctsap_low=0, paramdsttsap=194, paramlength3=2, dsttsap_high=1, dsttsap_low=2):
+	def __init__(self, length=17, pdutype=224, destref_high=0, destref_low=0, srcref_high=0, srcref_low=1, cotpclass=0, paramtpdusize=192, paramlength=1, tpdusize=10, srctsap=193, paramlength2=2, srctsap_high=1, srctsap_low=0, paramdsttsap=194, paramlength3=2, dsttsap_high=1, dsttsap_low=int(SLOT)):
 		self.length = length
 		self.pdutype = pdutype
 		self.destref_high = destref_high
@@ -73,6 +80,7 @@ print("TPKT version: " + str(getattr(tpkt_rep, "version")))
 print("TPKT reserved: " + str(getattr(tpkt_rep, "reserved")))
 print("TPKT length: " + str(getattr(tpkt_rep, "length_high")*256 + getattr(tpkt_rep, "length_low")))
 cotp_rep = COTP(length=data[4], tpdusize=data[13])
+print("COTP header:")
 print("COTP length: " + str(getattr(cotp_rep, "length")))
 print("COTP PDU size: " + str(tpdu_value.get(str(getattr(cotp_rep, "tpdusize")))))
 #time.sleep(1)
