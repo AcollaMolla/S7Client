@@ -162,7 +162,7 @@ def ReadVarRequest(msg):
 	db_low = int(DB)
 	length_high = int(0)
 	length_low = int(LENGTH)
-	
+
 	if len(DB) > 128:
 		db_high = DB - 128
 
@@ -199,12 +199,26 @@ def VerifyCotp(header, stage):
 	if stage == 1:
 		VerifyS7(header[3:])
 
+def ReadData(data):
+	data = data[7:]
+	length = (data[8]*256) + data[9]
+	data = data[-8:]
+	if data[0] == 255:
+		print("Successfully read value from PLC")
+	length = int(((data[2]*256) + data[3])/8)
+	value = data[-length:]
+	value = bytes(value)
+	value = struct.unpack('>f', value)
+	print("DB" + DB + "." + "DBD" + OFFSET + ": " + str(value))
+
 def Verify(data, stage):
 	tpkt_header = data[:4]
 	if tpkt_header[2]*256 + tpkt_header[3] != len(data):
 		print("Malformed packet")
 	cotp_header = data[4:]
 	VerifyCotp(cotp_header, stage)
+	if stage == 2:
+		ReadData(data)
 
 def SendAndReceive(msg, s, stage):
 	s.send(bytes(msg))
