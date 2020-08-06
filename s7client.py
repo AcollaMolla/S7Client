@@ -9,6 +9,7 @@ BUFFER_SIZE = 1024
 MESSAGE = b'Hello, world!'
 RACK = 0
 SLOT = 0
+PDU_SIZE = 480
 
 if len(sys.argv) > 1:
 	conn = sys.argv[1].split("/")
@@ -121,6 +122,17 @@ def ConnectRequest():
 	msg = tpkt_msg + cotp_msg
 	return msg
 
+def VerifyS7(header):
+	if header[1] == 3:
+		print("PLC accepted S7 communication!")
+	param_len = (header[6]*256) + header[7]
+	params = header[-param_len:]
+	pdu_size = (params[len(params)-2]*256) + params[len(params)-1]
+	global PDU_SIZE
+	PDU_SIZE = pdu_size
+	print("PLC accepts a PDU of size: " + str(PDU_SIZE))
+
+
 def VerifyCotp(header, stage):
 	if stage == 0:
 		if (len(header)-1) == header[0]:
@@ -128,6 +140,8 @@ def VerifyCotp(header, stage):
 				print("PLC accepted connection!")
 		else:
 			print("Malformed COTP")
+	if stage == 1:
+		VerifyS7(header[3:])
 
 def Verify(data, stage):
 	tpkt_header = data[:4]
