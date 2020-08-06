@@ -11,6 +11,10 @@ RACK = 0
 SLOT = 0
 PDU_SIZE = 480
 
+DB = 0
+OFFSET = 0
+LENGTH = 1
+
 if len(sys.argv) > 1:
 	conn = sys.argv[1].split("/")
 	TCP_IP = conn[0]
@@ -18,6 +22,16 @@ if len(sys.argv) > 1:
 		RACK = conn[1]
 	if len(conn) > 2 and conn[2]:
 		SLOT = conn[2]
+	if len(sys.argv) > 2:
+		addr = sys.argv[2].split(".")
+		if len(addr) > 2:
+			DB = addr[0]
+			OFFSET = addr[1]
+			LENGTH = addr[2]
+		else:
+			print("Warning: Missing parameters for requested address! (<DB>.<OFFSET>.<LENGTH IN BYTES>)")
+			print("Warning: Defaulting to DB=0, OFFSET=0, LENGTH=1")
+
 
 tpdu_value = {
 	"7": 128,
@@ -81,6 +95,23 @@ class S7_PARAM:
 		self.pdu_length_high = pdu_length_high
 		self.pdu_length_low = pdu_length_low
 
+class S7_PARAM_READ_VAR:
+	def __init__(self, function=4, item_count=1, variable_spec=18, addr_spec_len=10, syntax_id=16, transport_size=2, length_high=0, length_low=1, db_high=0, db_low=63, area=132, addr_high=0, addr_mid=0, addr_low=0):
+		self.function = function
+		self.item_count = item_count
+		self.variable_spec = variable_spec
+		self.addr_spec_len = addr_spec_len
+		self.syntax_id = syntax_id
+		self.transport_size = transport_size
+		self.length_high = length_high
+		self.length_low = length_low
+		self.db_high = db_high
+		self.db_low = db_low
+		self.area = area
+		self.addr_high = addr_high
+		self.addr_mid = addr_mid
+		self.addr_low = addr_low
+
 def SetupCommunication():
 	tpkt_msg = []
 	cotp_msg = []
@@ -122,6 +153,31 @@ def ConnectRequest():
 	msg = tpkt_msg + cotp_msg
 	return msg
 
+def ReadVarRequest(msg):
+	msg = msg[:len(msg)-8] #Keep the same message as before, but remove S7 Parameters part (ie the last 8 bytes)
+	s7_param_msg = []
+	s7_param = S7_PARAM()
+	msg[14] = 10
+	db_high = int(0)
+	db_low = int(DB)
+	length_high = int(0)
+	length_low = int(LENGTH)
+	
+	if len(DB) > 128:
+		db_high = DB - 128
+
+	if len(LENGTH) > 128:
+		db_high = DB - 128
+
+	s7_param = S7_PARAM_READ_VAR(function=4, item_count=1, variable_spec=18, addr_spec_len=10, syntax_id=16, transport_size=2, length_high=length_high, length_low=length_low, db_high=db_high, db_low=db_low, area=132, addr_high=0, addr_mid=0, addr_low=0)
+	for v in s7_param.__dict__.values():
+		s7_param_msg.append(v)
+	msg[14] = len(s7_param_msg)
+	msg[3] = len(msg) + len(s7_param_msg)
+	msg = msg + s7_param_msg
+	return msg
+
+
 def VerifyS7(header):
 	if header[1] == 3:
 		print("PLC accepted S7 communication!")
@@ -162,8 +218,12 @@ msg = ConnectRequest()
 print("Connecting to PLC...")
 SendAndReceive(msg, s, 0)
 msg = SetupCommunication() #Set up a S7COMM communication session
+print(msg)
 print("Initiate S7 communication...")
 SendAndReceive(msg, s, 1)
+print("Sending JOB request...")
+msg = ReadVarRequest(msg)
+SendAndReceive(msg, s, 2)
 
 #time.sleep(1)
 s.close()
