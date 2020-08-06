@@ -6,7 +6,7 @@ import sys
 TCP_IP = '127.0.0.1'
 TCP_PORT = 102
 BUFFER_SIZE = 1024
-MESSAGE = b'Hello, world!'
+
 RACK = 0
 SLOT = 0
 PDU_SIZE = 480
@@ -209,6 +209,7 @@ def ReadData(data):
 	value = data[-length:]
 	value = bytes(value)
 	value = struct.unpack('>f', value)
+	print()
 	print("DB" + DB + "." + "DBD" + OFFSET + ": " + str(value))
 
 def Verify(data, stage):
@@ -232,7 +233,6 @@ msg = ConnectRequest()
 print("Connecting to PLC...")
 SendAndReceive(msg, s, 0)
 msg = SetupCommunication() #Set up a S7COMM communication session
-print(msg)
 print("Initiate S7 communication...")
 SendAndReceive(msg, s, 1)
 print("Sending JOB request...")
