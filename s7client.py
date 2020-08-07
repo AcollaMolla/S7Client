@@ -2,6 +2,7 @@ import socket
 import struct
 import time
 import sys
+from datetime import datetime
 
 TCP_IP = '127.0.0.1'
 TCP_PORT = 102
@@ -237,8 +238,12 @@ print("Initiate S7 communication...")
 SendAndReceive(msg, s, 1)
 print("Sending JOB request...")
 msg = ReadVarRequest(msg)
-SendAndReceive(msg, s, 2)
-
-#time.sleep(1)
+dt = datetime.now()
+for i in range(100):
+	SendAndReceive(msg, s, 2)
+	time.sleep(1)
+dt2 = datetime.now()
+delta = dt2 - dt
+print(delta)
 s.close()
 exit()
